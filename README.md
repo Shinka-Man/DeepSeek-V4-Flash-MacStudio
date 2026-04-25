@@ -3,6 +3,8 @@
 **284B パラメータ MoE モデル「DeepSeek-V4 Flash」** を Apple Silicon Mac でローカル推論する環境。
 mxfp8 量子化（~155GB）、MLX ネイティブ、OpenAI 互換 API + Gradio チャット UI 付き。
 
+🤗 **モデル:** [mlx-community/DeepSeek-V4-Flash-mxfp8](https://huggingface.co/mlx-community/DeepSeek-V4-Flash-mxfp8)
+
 実測 **22 tok/s**、実使用メモリ **~164GB**（256K context 込み）、最大コンテキスト **1M**。
 
 > 💡 **動作要件:** Apple Silicon Mac で **ユニファイドメモリ 192GB 以上**
@@ -42,6 +44,8 @@ cd DeepSeek-V4-Flash-MacStudio
 ```
 
 ### 2. モデルダウンロード（~155GB）
+
+モデル本体: 🤗 [mlx-community/DeepSeek-V4-Flash-mxfp8](https://huggingface.co/mlx-community/DeepSeek-V4-Flash-mxfp8)
 
 ```bash
 pip install huggingface-hub[hf_xet]
