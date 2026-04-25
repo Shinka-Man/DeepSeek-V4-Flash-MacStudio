@@ -9,8 +9,12 @@ API_PORT=7777
 cd "$PROJECT_DIR"
 source venv/bin/activate
 
-lsof -ti :$UI_PORT  | xargs kill -9 2>/dev/null
-lsof -ti :$API_PORT | xargs kill -9 2>/dev/null
+# 起動前にポートを解放（前回の残骸プロセス対策）
+release_ports() {
+    lsof -ti :$UI_PORT  2>/dev/null | xargs kill -9 2>/dev/null
+    lsof -ti :$API_PORT 2>/dev/null | xargs kill -9 2>/dev/null
+}
+release_ports
 
 echo "=========================================="
 echo "  DeepSeek-V4 Flash · mxfp8 MLX"
@@ -58,10 +62,15 @@ cleanup() {
     echo ""
     echo "🛑 シャットダウン中..."
     kill $UI_PID $API_PID 2>/dev/null
-    wait $UI_PID $API_PID 2>/dev/null
+    sleep 1
+    # 念のためポートを掴んだままのプロセスを強制解放
+    release_ports
     echo "👋 メモリ完全解放しました"
 }
 trap cleanup EXIT INT TERM
 
 # どちらかが終了したら(=ブラウザ閉じて UI 自己終了したら)両方殺す
-wait -n $API_PID $UI_PID
+# zsh は `wait -n` 非対応なのでポーリング
+while kill -0 $API_PID 2>/dev/null && kill -0 $UI_PID 2>/dev/null; do
+    sleep 2
+done
