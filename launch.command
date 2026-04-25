@@ -51,7 +51,7 @@ echo "=========================================="
 echo "  🟢 起動完了"
 echo "  UI:  http://127.0.0.1:$UI_PORT"
 echo "  API: http://0.0.0.0:$API_PORT/v1"
-echo "  終了: Ctrl+C またはこのウィンドウを閉じる"
+echo "  終了: Ctrl+C / このウィンドウを閉じる / ブラウザを閉じる(30秒で自動終了)"
 echo "=========================================="
 
 cleanup() {
@@ -59,8 +59,9 @@ cleanup() {
     echo "🛑 シャットダウン中..."
     kill $UI_PID $API_PID 2>/dev/null
     wait $UI_PID $API_PID 2>/dev/null
-    echo "👋 終了しました"
+    echo "👋 メモリ完全解放しました"
 }
 trap cleanup EXIT INT TERM
 
-wait $API_PID $UI_PID
+# どちらかが終了したら(=ブラウザ閉じて UI 自己終了したら)両方殺す
+wait -n $API_PID $UI_PID

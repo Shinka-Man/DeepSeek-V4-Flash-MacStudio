@@ -1,9 +1,11 @@
 """DeepSeek-V4 Flash — Gradio チャット UI
 server.py (port 7777) に接続して推論する。モデルはUI側に持たない。
 """
+import os
 import re
 import time
 import json
+import threading
 import httpx
 import gradio as gr
 
@@ -202,6 +204,41 @@ with gr.Blocks(title="DeepSeek-V4 Flash Chat") as demo:
     send_btn.click(respond, inputs, outputs)
     clear_btn.click(lambda: [], outputs=chatbot)
     ctx_slider.change(_ctx_label, inputs=ctx_slider, outputs=ctx_info)
+
+    # ============================================================
+    # ブラウザを閉じたら 30 秒後にプロセス終了
+    # → launch.command が server.py も殺してメモリ完全解放
+    # （30秒のグレースは「リロード」誤判定回避）
+    # ============================================================
+    _active_sessions = set()
+    _shutdown_timer = {"t": None}
+    _lock = threading.Lock()
+
+    def _on_load(request: gr.Request):
+        with _lock:
+            _active_sessions.add(request.session_hash)
+            if _shutdown_timer["t"]:
+                _shutdown_timer["t"].cancel()
+                _shutdown_timer["t"] = None
+                print(f"🟢 セッション復帰: {len(_active_sessions)} 個アクティブ")
+
+    def _on_unload(request: gr.Request):
+        with _lock:
+            _active_sessions.discard(request.session_hash)
+            print(f"🟡 セッション終了: {len(_active_sessions)} 個残存")
+            if not _active_sessions:
+                print("⏳ 30秒後にシャットダウン予定（再接続あればキャンセル）")
+                _shutdown_timer["t"] = threading.Timer(30.0, _shutdown)
+                _shutdown_timer["t"].daemon = True
+                _shutdown_timer["t"].start()
+
+    def _shutdown():
+        print("🛑 ブラウザ未接続 — UI 終了 → server.py もパージ")
+        os._exit(0)
+
+    demo.load(_on_load)
+    demo.unload(_on_unload)
+
 
 demo.launch(
     server_name="127.0.0.1",
